@@ -106,9 +106,9 @@ cd opensearch
 Use the following to start the Docker stack. It launches `./scripts/start.sh` which will initiate the following:
 
 1. If first run:
-   - Prompt user to create a new OpenSearch Admin password.
-   - Download Docker images.
-   - Generate self-signed TLS certificates.
+  - Prompt user to create a new OpenSearch Admin password.
+  - Download Docker images.
+  - Generate self-signed TLS certificates.
 2. Launch of two Docker containers, OpenSearch and OpenSearch Dashboards.
 3. Instance monitoring and healthchecks when ready.
 
@@ -201,7 +201,7 @@ curl -sk -u admin:admin -X POST "https://opensearch-dashboards.url:5601/api/save
 curl -sk -u admin:admin -H "osd-xsrf: true" "https://opensearch-dashboards.url:5601/api/saved_objects/_find?type=index-pattern&per_page=100"
 ```
 
-Navigate to Dashboards' Discovery application, [https://opensearch-dashboards.url:5601/app/data-explorer/discover](https://opensearch-dashboards.url:5601/app/data-explorer/discover). The Index Patterns will be available in a dropdown on the top of the sidebar. From there, you can select the index you want to run Lucene or DQL queries against.
+Navigate to Dashboards' Discover application, [https://opensearch-dashboards.url:5601/app/data-explorer/discover](https://opensearch-dashboards.url:5601/app/data-explorer/discover). The Index Patterns will be available in a dropdown on the top of the sidebar. From there, you can select the index you want to run Lucene or DQL queries against.
 
 ## Ideas and Feedback
 
