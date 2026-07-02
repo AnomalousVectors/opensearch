@@ -106,9 +106,9 @@ cd opensearch
 Use the following to start the Docker stack. It launches `./scripts/start.sh` which will initiate the following:
 
 1. If first run:
-  - Prompt user to create a new OpenSearch Admin password.
-  - Download Docker images.
-  - Generate self-signed TLS certificates.
+   - Prompt user to create a new OpenSearch Admin password.
+   - Download Docker images.
+   - Generate self-signed TLS certificates.
 2. Launch of two Docker containers, OpenSearch and OpenSearch Dashboards.
 3. Instance monitoring and healthchecks when ready.
 
