@@ -16,14 +16,14 @@ cd "$OUT_DIR"
 if [ ! -f root-ca.pem ] || [ ! -f root-ca-key.pem ]; then
   openssl genrsa -out root-ca-key.pem 2048
   openssl req -new -x509 -sha256 -key root-ca-key.pem -out root-ca.pem -days 3650 \
-    -subj "/C=US/ST=State/L=City/O=AttackFramework/OU=Dev/CN=OpenSearch-Root-CA"
+    -subj "/C=US/ST=State/L=City/O=AnomalousVectors/OU=Dev/CN=OpenSearch-Root-CA"
 fi
 
 # OpenSearch node cert: CN=opensearch; SANs: localhost, opensearch, opensearch.url
 if [ ! -f node.pem ] || [ ! -f node-key.pem ]; then
   openssl genrsa -out node-key.pem 2048
   openssl req -new -key node-key.pem -out node.csr \
-    -subj "/C=US/ST=State/L=City/O=AttackFramework/OU=Dev/CN=opensearch"
+    -subj "/C=US/ST=State/L=City/O=AnomalousVectors/OU=Dev/CN=opensearch"
   cat > node.ext << EOF
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
@@ -40,7 +40,7 @@ fi
 if [ ! -f dashboards.pem ] || [ ! -f dashboards-key.pem ]; then
   openssl genrsa -out dashboards-key.pem 2048
   openssl req -new -key dashboards-key.pem -out dashboards.csr \
-    -subj "/C=US/ST=State/L=City/O=AttackFramework/OU=Dev/CN=opensearch-dashboards"
+    -subj "/C=US/ST=State/L=City/O=AnomalousVectors/OU=Dev/CN=opensearch-dashboards"
   cat > dashboards.ext << EOF
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE

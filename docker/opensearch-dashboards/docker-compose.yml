@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         OPENSEARCH_VERSION: ${OPENSEARCH_VERSION}
-    image: attackframework-opensearch-dashboards:${OPENSEARCH_VERSION}
+    image: anomalousvectors-opensearch-dashboards:${OPENSEARCH_VERSION}
     container_name: opensearch-dashboards
     ports:
       - "${OPENSEARCH_DASHBOARDS_BIND_ADDRESS}:${OPENSEARCH_DASHBOARDS_PORT}:${OPENSEARCH_DASHBOARDS_PORT}"

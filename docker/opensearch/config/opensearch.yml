@@ -9,7 +9,7 @@ plugins.security.ssl.http.pemkey_filepath: certs/node-key.pem
 plugins.security.ssl.http.pemtrustedcas_filepath: certs/root-ca.pem
 plugins.security.allow_default_init_securityindex: true
 plugins.security.nodes_dn:
-  - "CN=opensearch,OU=Dev,O=AttackFramework,L=City,ST=State,C=US"
+  - "CN=opensearch,OU=Dev,O=AnomalousVectors,L=City,ST=State,C=US"
 
 # HTTP/2 over HTTPS (reactor-netty4-secure)
 http.type: reactor-netty4-secure

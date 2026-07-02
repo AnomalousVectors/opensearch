@@ -4,7 +4,7 @@ services:
       context: .
       args:
         OPENSEARCH_VERSION: ${OPENSEARCH_VERSION}
-    image: attackframework-opensearch:${OPENSEARCH_VERSION}
+    image: anomalousvectors-opensearch:${OPENSEARCH_VERSION}
     container_name: opensearch
     environment:
       - cluster.name=${CLUSTER_NAME}

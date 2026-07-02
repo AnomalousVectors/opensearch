@@ -14,9 +14,3 @@ logging.dest: stdout
 data_source.enabled: false
 workspace.enabled: false
 explore.enabled: false
-
-# Discover's default wildcard highlight can build huge response strings for
-# indices with multi-MB nested body fields (e.g. Burp findings). Disable it
-# to avoid hitting OpenSearch's per-string JSON parse ceiling in Discover.
-uiSettings.overrides:
-  "doc_table:highlight": false

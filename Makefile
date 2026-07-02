@@ -1,5 +1,5 @@
 # ================================
-# Attack Framework Root Makefile
+# OpenSearch Root Makefile
 # ================================
 
 .DEFAULT_GOAL := help
