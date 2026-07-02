@@ -115,7 +115,7 @@ Use the following to start the Docker stack. It launches `./scripts/start.sh` wh
 ```shell
 cd opensearch
 make
-sudo make docker-up
+make docker-up
 ```
 
 The following shows a truncated example of a healthy initial launch.
