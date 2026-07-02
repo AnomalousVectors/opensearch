@@ -179,7 +179,7 @@ Login to Dashboards at [https://opensearch-dashboards.url:5601/app/login](https:
 
 ### Use
 
-At this point, it will be ready to use. For example, you can configure the [Burp Exporter](https://github.com/AnomalousVectors/burp-exporter) Burp Suite extension to export Burp data for processing. Just add [https://opensearch.url:9200](https://opensearch.url:9200) as a Destination within Burp Exporter.
+At this point, it will be ready to use. For example, you can configure the [Burp Exporter](https://github.com/AnomalousVectors/burp-exporter) Burp Suite extension to export Burp data for processing. Just add `https://opensearch.url:9200` as a Destination within Burp Exporter.
 
 After indexes are created and populated in OpenSearch, you can leverage [Dashboards'](https://docs.opensearch.org/latest/dashboards/) many features. The [Discover](https://docs.opensearch.org/latest/dashboards/discover/index-discover/) application is a great place to start exploring because it will enable you to run Lucene and DQL queries against the indexes.
 
