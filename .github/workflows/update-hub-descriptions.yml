@@ -1,0 +1,64 @@
+name: Update Docker Hub descriptions
+
+# Sets each Hub repo Overview (full_description) from dockerhub/*.md.
+# Runs on changes to those files, and can be run manually.
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "dockerhub/**"
+      - ".github/workflows/update-hub-descriptions.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub API and update overviews
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TOKEN="$(curl -fsS -H "Content-Type: application/json" \
+            -d "{\"username\":\"${DOCKERHUB_USERNAME}\",\"password\":\"${DOCKERHUB_TOKEN}\"}" \
+            https://hub.docker.com/v2/users/login/ | jq -r .token)"
+          if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+            echo "Docker Hub login failed" >&2
+            exit 1
+          fi
+
+          update_repo() {
+            local name="$1"
+            local short="$2"
+            local file="$3"
+            local body
+            body="$(jq -n \
+              --arg description "${short}" \
+              --arg full_description "$(cat "${file}")" \
+              '{description:$description, full_description:$full_description}')"
+            echo "Updating anomalousvectors/${name} ..."
+            curl -fsS -X PATCH \
+              -H "Authorization: JWT ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "${body}" \
+              "https://hub.docker.com/v2/repositories/anomalousvectors/${name}/" \
+              | jq '{name, description, full_description:(.full_description|.[0:80]+"...")}'
+          }
+
+          update_repo "opensearch" \
+            "OpenSearch for agentic pentest research. See the project wiki." \
+            "dockerhub/opensearch.md"
+
+          update_repo "opensearch-dashboards" \
+            "Dashboards for the Anomalous Vectors OpenSearch research stack. See the wiki." \
+            "dockerhub/opensearch-dashboards.md"
+
+          echo "Docker Hub overviews updated."

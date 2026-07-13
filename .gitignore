@@ -15,6 +15,7 @@
 
 # Allowed Directories
 !docker/**
+!dockerhub/**
 !scripts/**
 !.github/**
 
