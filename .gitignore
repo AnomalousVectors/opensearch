@@ -3,19 +3,21 @@
 !*/
 
 # Allowed Files
-!.env
+!.env.example
 !.gitattributes
 !.gitignore
 !LICENSE
-!Makefile
+!NOTICE
+!THIRD_PARTY_NOTICES.md
 !README.md
+!compose.yml
+!compose.build.yml
 
 # Allowed Directories
 !docker/**
-!k8s/**
+!scripts/**
+!.github/**
 
 # Ignore for local VCS
 .idea/
-
-# Local certs (prefer DATA_VOLUME_ROOT/certs at runtime)
-docker/opensearch/certs/
+.env

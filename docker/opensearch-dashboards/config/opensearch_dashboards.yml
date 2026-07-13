@@ -9,6 +9,9 @@ opensearch.ssl.verificationMode: certificate
 opensearch.ssl.certificateAuthorities: ["/usr/share/opensearch-dashboards/config/certs/root-ca.pem"]
 logging.dest: stdout
 
+# Avoid huge Discover highlight payloads for nested HTTP body fields.
+uiSettings.overrides."doc_table:highlight": false
+
 # Workspaces/data-source UI are intentionally disabled in this repo.
 # Isolation is handled by running separate clusters.
 data_source.enabled: false

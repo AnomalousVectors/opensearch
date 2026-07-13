@@ -1,0 +1,10 @@
+Anomalous Vectors OpenSearch stack
+Copyright (c) 2026 Anomalous Vectors
+
+This product includes software developed by Anomalous Vectors and third parties.
+
+The Docker images published under the anomalousvectors/ namespace on Docker Hub
+are based on OpenSearch Project container images. They are not official
+OpenSearch Project images.
+
+See THIRD_PARTY_NOTICES.md for third-party license information.

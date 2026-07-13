@@ -1,0 +1,108 @@
+name: Publish Docker Hub images
+
+# Publishes the tag hardcoded in compose.yml whenever image-related paths change.
+# Manual Run workflow still works; optional image_tag overrides compose.yml.
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "compose.yml"
+      - "compose.build.yml"
+      - "docker/**"
+      - ".github/workflows/publish-images.yml"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Override tag (e.g. 3.7.0-av.1). Leave empty to use compose.yml."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-docker-hub
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: meta
+        run: |
+          set -euo pipefail
+          OVERRIDE="${{ inputs.image_tag }}"
+          if [ -n "${OVERRIDE}" ]; then
+            TAG="${OVERRIDE}"
+            echo "Using workflow_dispatch override tag: ${TAG}"
+          else
+            TAG="$(grep -oE 'anomalousvectors/opensearch:[^[:space:]]+' compose.yml | head -1 | cut -d: -f2)"
+            if [ -z "${TAG}" ]; then
+              echo "Could not parse anomalousvectors/opensearch:<tag> from compose.yml" >&2
+              exit 1
+            fi
+            echo "Using tag from compose.yml: ${TAG}"
+          fi
+          case "${TAG}" in
+            *-av.*)
+              VERSION="${TAG%-av.*}"
+              REV="${TAG##*-av.}"
+              ;;
+            *)
+              echo "Tag must look like <opensearch_version>-av.<revision> (got: ${TAG})" >&2
+              exit 1
+              ;;
+          esac
+          if [ -z "${VERSION}" ] || [ -z "${REV}" ]; then
+            echo "Failed to split VERSION/REV from tag: ${TAG}" >&2
+            exit 1
+          fi
+          {
+            echo "image_tag=${TAG}"
+            echo "opensearch_version=${VERSION}"
+            echo "av_image_revision=${REV}"
+          } >> "${GITHUB_OUTPUT}"
+          echo "Publishing anomalousvectors/opensearch:${TAG} and anomalousvectors/opensearch-dashboards:${TAG} (linux/amd64,linux/arm64)"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push OpenSearch
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/opensearch
+          file: docker/opensearch/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: anomalousvectors/opensearch:${{ steps.meta.outputs.image_tag }}
+          build-args: |
+            OPENSEARCH_VERSION=${{ steps.meta.outputs.opensearch_version }}
+            AV_IMAGE_REVISION=${{ steps.meta.outputs.av_image_revision }}
+            IMAGE_TAG=${{ steps.meta.outputs.image_tag }}
+
+      - name: Build and push OpenSearch Dashboards
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/opensearch-dashboards
+          file: docker/opensearch-dashboards/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: anomalousvectors/opensearch-dashboards:${{ steps.meta.outputs.image_tag }}
+          build-args: |
+            OPENSEARCH_VERSION=${{ steps.meta.outputs.opensearch_version }}
+            AV_IMAGE_REVISION=${{ steps.meta.outputs.av_image_revision }}
+            IMAGE_TAG=${{ steps.meta.outputs.image_tag }}
