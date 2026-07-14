@@ -3,8 +3,8 @@ set -e
 CONF_SRC="${OPENSEARCH_PATH_CONF:-/usr/share/opensearch/config}"
 CERT_DIR="$CONF_SRC/certs"
 
-# Generate certs if missing (OpenSearch node cert and/or Dashboards cert)
-if [ ! -f "$CERT_DIR/node.pem" ] || [ ! -f "$CERT_DIR/node-key.pem" ] || \
+# Generate certs if missing (OpenSearch and/or Dashboards leaf certs)
+if [ ! -f "$CERT_DIR/opensearch.pem" ] || [ ! -f "$CERT_DIR/opensearch-key.pem" ] || \
    [ ! -f "$CERT_DIR/dashboards.pem" ] || [ ! -f "$CERT_DIR/dashboards-key.pem" ]; then
   echo "Certs missing in $CERT_DIR; generating..."
   /usr/share/opensearch/scripts/generate-certs.sh "$CERT_DIR"

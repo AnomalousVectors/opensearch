@@ -1,11 +1,11 @@
 # Security: enabled (TLS + auth). Do not set plugins.security.disabled or set to false.
 # TLS cert paths are relative to config dir; certs live in config/certs/
-plugins.security.ssl.transport.pemcert_filepath: certs/node.pem
-plugins.security.ssl.transport.pemkey_filepath: certs/node-key.pem
+plugins.security.ssl.transport.pemcert_filepath: certs/opensearch.pem
+plugins.security.ssl.transport.pemkey_filepath: certs/opensearch-key.pem
 plugins.security.ssl.transport.pemtrustedcas_filepath: certs/root-ca.pem
 plugins.security.ssl.http.enabled: true
-plugins.security.ssl.http.pemcert_filepath: certs/node.pem
-plugins.security.ssl.http.pemkey_filepath: certs/node-key.pem
+plugins.security.ssl.http.pemcert_filepath: certs/opensearch.pem
+plugins.security.ssl.http.pemkey_filepath: certs/opensearch-key.pem
 plugins.security.ssl.http.pemtrustedcas_filepath: certs/root-ca.pem
 plugins.security.allow_default_init_securityindex: true
 plugins.security.nodes_dn:
