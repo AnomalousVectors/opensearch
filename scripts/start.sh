@@ -112,6 +112,20 @@ cleanup_runtime_passwords() {
   unset OPENSEARCH_INITIAL_ADMIN_PASSWORD
   unset OPENSEARCH_DASHBOARDS_PASSWORD
 }
+
+# Host-side private-key modes (Linux/macOS bind mounts). Windows uses start.ps1 ACLs instead.
+protect_cert_private_keys() {
+  local dir="$CERTS_DIR"
+  [ -d "$dir" ] || return 0
+  chmod 700 "$dir" 2>/dev/null || true
+  local key
+  for key in "$dir"/*-key.pem; do
+    if [ -f "$key" ]; then
+      chmod 600 "$key" 2>/dev/null || true
+    fi
+  done
+}
+
 trap cleanup_runtime_passwords EXIT
 
 print_prompt "Pulling Hub images from compose.yml, then starting the stack."
@@ -131,6 +145,7 @@ if [ "$FIRST_START" = true ]; then
     print_error "OpenSearch did not become reachable in time."
     exit 1
   fi
+  protect_cert_private_keys
 
   if ! validate_admin_password "$OPENSEARCH_INITIAL_ADMIN_PASSWORD"; then
     print_error "Initial password validation failed after bootstrap. Aborting start."
@@ -146,6 +161,7 @@ else
     print_error "OpenSearch did not become reachable in time."
     exit 1
   fi
+  protect_cert_private_keys
 
   MAX_PASSWORD_ATTEMPTS="${MAX_PASSWORD_ATTEMPTS:-3}"
   ATTEMPT=1
@@ -167,4 +183,5 @@ else
   compose_stack up -d --wait --wait-timeout 180 opensearch-dashboards
 fi
 
+protect_cert_private_keys
 print_prompt "Stack is up. OpenSearch and Dashboards should report healthy shortly."

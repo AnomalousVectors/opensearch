@@ -10,6 +10,16 @@ if [ ! -f "$CERT_DIR/opensearch.pem" ] || [ ! -f "$CERT_DIR/opensearch-key.pem" 
   /usr/share/opensearch/scripts/generate-certs.sh "$CERT_DIR"
 fi
 
+# Tighten private-key modes on every start (Linux bind mounts; no-op if FS ignores mode bits)
+if [ -d "$CERT_DIR" ]; then
+  chmod 700 "$CERT_DIR" 2>/dev/null || true
+  for key in "$CERT_DIR"/*-key.pem; do
+    if [ -f "$key" ]; then
+      chmod 600 "$key" 2>/dev/null || true
+    fi
+  done
+fi
+
 # Substitute env vars in opensearch.yml (OPENSEARCH_BIND_ADDRESS, OPENSEARCH_PORT, etc.) so .env is single source of truth
 RESOLVED_CONF="/tmp/opensearch-config"
 mkdir -p "$RESOLVED_CONF"

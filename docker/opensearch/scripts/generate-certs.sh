@@ -53,4 +53,12 @@ EOF
   rm -f dashboards.csr dashboards.ext
 fi
 
+# Private keys: owner read/write only. Directory: owner-only access.
+chmod 700 "$OUT_DIR" 2>/dev/null || true
+for key in "$OUT_DIR"/*-key.pem; do
+  if [ -f "$key" ]; then
+    chmod 600 "$key" 2>/dev/null || true
+  fi
+done
+
 echo "Generated certs in $OUT_DIR"

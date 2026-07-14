@@ -65,6 +65,37 @@ function Clear-RuntimePasswords {
   Remove-Item Env:OPENSEARCH_DASHBOARDS_PASSWORD -ErrorAction SilentlyContinue
 }
 
+# Restrict certs dir and *-key.pem to the current user and Administrators (not all Users).
+function Protect-CertPrivateKeys([string]$CertsDir) {
+  if (-not (Test-Path -LiteralPath $CertsDir)) { return }
+
+  $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+  $admins = New-Object System.Security.Principal.SecurityIdentifier(
+    [System.Security.Principal.WellKnownSidType]::BuiltinAdministratorsSid, $null)
+
+  $inherit = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor `
+    [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
+  $propagate = [System.Security.AccessControl.PropagationFlags]::None
+
+  $dirAcl = New-Object System.Security.AccessControl.DirectorySecurity
+  $dirAcl.SetAccessRuleProtection($true, $false)
+  $dirAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+    $currentUser, 'FullControl', $inherit, $propagate, 'Allow')))
+  $dirAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+    $admins, 'FullControl', $inherit, $propagate, 'Allow')))
+  Set-Acl -LiteralPath $CertsDir -AclObject $dirAcl
+
+  Get-ChildItem -LiteralPath $CertsDir -Filter '*-key.pem' -File -ErrorAction SilentlyContinue | ForEach-Object {
+    $fileAcl = New-Object System.Security.AccessControl.FileSecurity
+    $fileAcl.SetAccessRuleProtection($true, $false)
+    $fileAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+      $currentUser, 'FullControl', 'Allow')))
+    $fileAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+      $admins, 'FullControl', 'Allow')))
+    Set-Acl -LiteralPath $_.FullName -AclObject $fileAcl
+  }
+}
+
 try {
   Import-RepoEnv
 
@@ -72,6 +103,7 @@ try {
   $dataDir = Join-Path $env:DATA_VOLUME_ROOT "data"
   New-Item -ItemType Directory -Force -Path $certsDir | Out-Null
   New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
+  Protect-CertPrivateKeys $certsDir
 
   $firstStart = -not (Test-Path (Join-Path $dataDir "nodes"))
 
@@ -98,6 +130,7 @@ try {
     if (-not (Wait-OpenSearchReachable)) {
       throw "OpenSearch did not become reachable in time."
     }
+    Protect-CertPrivateKeys $certsDir
     if (-not (Test-AdminPassword $password)) {
       throw "Initial password validation failed after bootstrap. Aborting start."
     }
@@ -108,6 +141,7 @@ try {
     if (-not (Wait-OpenSearchReachable)) {
       throw "OpenSearch did not become reachable in time."
     }
+    Protect-CertPrivateKeys $certsDir
 
     $maxAttempts = if ($env:MAX_PASSWORD_ATTEMPTS) { [int]$env:MAX_PASSWORD_ATTEMPTS } else { 3 }
     $ok = $false
@@ -128,6 +162,7 @@ try {
     Invoke-Compose up -d --wait --wait-timeout 180 opensearch-dashboards
   }
 
+  Protect-CertPrivateKeys $certsDir
   Write-Prompt "Stack is up. OpenSearch and Dashboards should report healthy shortly."
 } finally {
   Clear-RuntimePasswords
