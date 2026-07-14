@@ -66,33 +66,59 @@ function Clear-RuntimePasswords {
 }
 
 # Restrict certs dir and *-key.pem to the current user and Administrators (not all Users).
+# Uses icacls: Set-Acl with a replaced DACL requires SeSecurityPrivilege (often missing in a normal shell).
 function Protect-CertPrivateKeys([string]$CertsDir) {
   if (-not (Test-Path -LiteralPath $CertsDir)) { return }
 
-  $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-  $admins = New-Object System.Security.Principal.SecurityIdentifier(
-    [System.Security.Principal.WellKnownSidType]::BuiltinAdministratorsSid, $null)
+  $icacls = Join-Path $env:SystemRoot 'System32\icacls.exe'
+  if (-not (Test-Path -LiteralPath $icacls)) {
+    Write-ErrPrompt "icacls not found; skipping private-key ACL hardening on the host."
+    return
+  }
 
-  $inherit = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor `
-    [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
-  $propagate = [System.Security.AccessControl.PropagationFlags]::None
+  $userSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  $adminsSid = 'S-1-5-32-544'
+  $broadAccounts = @(
+    'Everyone',
+    'Users',
+    'BUILTIN\Users',
+    'Authenticated Users',
+    'NT AUTHORITY\Authenticated Users'
+  )
 
-  $dirAcl = New-Object System.Security.AccessControl.DirectorySecurity
-  $dirAcl.SetAccessRuleProtection($true, $false)
-  $dirAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
-    $currentUser, 'FullControl', $inherit, $propagate, 'Allow')))
-  $dirAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
-    $admins, 'FullControl', $inherit, $propagate, 'Allow')))
-  Set-Acl -LiteralPath $CertsDir -AclObject $dirAcl
+  function Invoke-Icacls([string[]]$IcaclsArgs) {
+    $output = & $icacls @IcaclsArgs 2>&1
+    return @{ ExitCode = $LASTEXITCODE; Output = $output }
+  }
 
-  Get-ChildItem -LiteralPath $CertsDir -Filter '*-key.pem' -File -ErrorAction SilentlyContinue | ForEach-Object {
-    $fileAcl = New-Object System.Security.AccessControl.FileSecurity
-    $fileAcl.SetAccessRuleProtection($true, $false)
-    $fileAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
-      $currentUser, 'FullControl', 'Allow')))
-    $fileAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
-      $admins, 'FullControl', 'Allow')))
-    Set-Acl -LiteralPath $_.FullName -AclObject $fileAcl
+  try {
+    $null = Invoke-Icacls @($CertsDir, '/inheritance:r')
+    foreach ($acct in $broadAccounts) {
+      $null = Invoke-Icacls @($CertsDir, '/remove:g', $acct)
+    }
+    $dirGrant = Invoke-Icacls @(
+      $CertsDir,
+      '/grant:r',
+      "*${userSid}:(OI)(CI)F",
+      "*${adminsSid}:(OI)(CI)F"
+    )
+    if ($dirGrant.ExitCode -ne 0) {
+      Write-ErrPrompt "Could not tighten ACLs on certs directory (icacls exit $($dirGrant.ExitCode))."
+    }
+
+    Get-ChildItem -LiteralPath $CertsDir -Filter '*-key.pem' -File -ErrorAction SilentlyContinue | ForEach-Object {
+      $path = $_.FullName
+      $null = Invoke-Icacls @($path, '/inheritance:r')
+      foreach ($acct in $broadAccounts) {
+        $null = Invoke-Icacls @($path, '/remove:g', $acct)
+      }
+      $keyGrant = Invoke-Icacls @($path, '/grant:r', "*${userSid}:F", "*${adminsSid}:F")
+      if ($keyGrant.ExitCode -ne 0) {
+        Write-ErrPrompt "Could not tighten ACLs on $($_.Name) (icacls exit $($keyGrant.ExitCode))."
+      }
+    }
+  } catch {
+    Write-ErrPrompt "Could not tighten cert private-key ACLs on the host: $($_.Exception.Message)"
   }
 }
 
