@@ -1,7 +1,7 @@
 # OpenSearch with transport-reactor-netty4 (HTTP/2 + HTTPS) and cert generation.
 # Based on the OpenSearch Project image — not an official OpenSearch Project image.
 ARG OPENSEARCH_VERSION=3.7.0
-ARG AV_IMAGE_REVISION=1
+ARG AV_IMAGE_REVISION=2
 ARG IMAGE_TAG=${OPENSEARCH_VERSION}-av.${AV_IMAGE_REVISION}
 
 FROM opensearchproject/opensearch:${OPENSEARCH_VERSION}
@@ -32,12 +32,17 @@ RUN /usr/share/opensearch/bin/opensearch-plugin install --batch transport-reacto
 # Config templates (repo is source of truth; baked into the image at build)
 COPY --chown=opensearch:opensearch config/opensearch.yml /usr/share/opensearch/config/opensearch.yml
 COPY --chown=opensearch:opensearch config/opensearch-performance-analyzer/ /usr/share/opensearch/config/opensearch-performance-analyzer/
+# Security overlays: clientcert auth for Dashboards leaf CN → kibana_server
+COPY --chown=opensearch:opensearch config/opensearch-security/config.yml /usr/share/opensearch/config/opensearch-security/config.yml
+COPY --chown=opensearch:opensearch config/opensearch-security/roles_mapping.yml /usr/share/opensearch/config/opensearch-security/roles_mapping.yml
 
 # Scripts: cert generation and entrypoint wrapper
 COPY --chown=opensearch:opensearch --chmod=755 scripts/generate-certs.sh /usr/share/opensearch/scripts/generate-certs.sh
 COPY --chown=opensearch:opensearch --chmod=755 entrypoint-wrapper.sh /usr/share/opensearch/entrypoint-wrapper.sh
 RUN sed -i 's/\r$//' /usr/share/opensearch/scripts/generate-certs.sh /usr/share/opensearch/entrypoint-wrapper.sh \
-  && sed -i 's/\r$//' /usr/share/opensearch/config/opensearch.yml
+  && sed -i 's/\r$//' /usr/share/opensearch/config/opensearch.yml \
+    /usr/share/opensearch/config/opensearch-security/config.yml \
+    /usr/share/opensearch/config/opensearch-security/roles_mapping.yml
 
 ENTRYPOINT ["/usr/share/opensearch/entrypoint-wrapper.sh"]
 CMD ["opensearch"]

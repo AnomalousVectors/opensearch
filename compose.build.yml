@@ -10,8 +10,8 @@ services:
       dockerfile: Dockerfile
       args:
         OPENSEARCH_VERSION: "3.7.0"
-        AV_IMAGE_REVISION: "1"
-        IMAGE_TAG: "3.7.0-av.1"
+        AV_IMAGE_REVISION: "2"
+        IMAGE_TAG: "3.7.0-av.2"
 
   opensearch-dashboards:
     build:
@@ -19,5 +19,5 @@ services:
       dockerfile: Dockerfile
       args:
         OPENSEARCH_VERSION: "3.7.0"
-        AV_IMAGE_REVISION: "1"
-        IMAGE_TAG: "3.7.0-av.1"
+        AV_IMAGE_REVISION: "2"
+        IMAGE_TAG: "3.7.0-av.2"

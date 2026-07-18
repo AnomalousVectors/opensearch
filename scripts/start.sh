@@ -110,7 +110,6 @@ validate_admin_password() {
 
 cleanup_runtime_passwords() {
   unset OPENSEARCH_INITIAL_ADMIN_PASSWORD
-  unset OPENSEARCH_DASHBOARDS_PASSWORD
 }
 
 # Host-side private-key modes (Linux/macOS bind mounts). Windows uses start.ps1 ACLs instead.
@@ -134,7 +133,6 @@ compose_stack pull
 if [ "$FIRST_START" = true ]; then
   prompt_initial_password_with_confirmation
   export OPENSEARCH_INITIAL_ADMIN_PASSWORD="$PASSWORD_INPUT"
-  export OPENSEARCH_DASHBOARDS_PASSWORD="$PASSWORD_INPUT"
   print_prompt "OpenSearch stores only the hash. Save this password for Dashboards and API login as admin."
   print_prompt "Change password docs: https://docs.opensearch.org/latest/api-reference/security/authentication/change-password/"
 
@@ -162,23 +160,6 @@ else
     exit 1
   fi
   protect_cert_private_keys
-
-  MAX_PASSWORD_ATTEMPTS="${MAX_PASSWORD_ATTEMPTS:-3}"
-  ATTEMPT=1
-  while [ "$ATTEMPT" -le "$MAX_PASSWORD_ATTEMPTS" ]; do
-    prompt_password "Enter OpenSearch admin password for this run:"
-    if validate_admin_password "$PASSWORD_INPUT"; then
-      export OPENSEARCH_DASHBOARDS_PASSWORD="$PASSWORD_INPUT"
-      break
-    fi
-    if [ "$ATTEMPT" -lt "$MAX_PASSWORD_ATTEMPTS" ]; then
-      print_error "Invalid password. Please try again. (${ATTEMPT}/${MAX_PASSWORD_ATTEMPTS})"
-    else
-      print_error "Invalid password. Reached max attempts (${MAX_PASSWORD_ATTEMPTS}). Aborting start."
-      exit 1
-    fi
-    ATTEMPT=$((ATTEMPT + 1))
-  done
 
   compose_stack up -d --wait --wait-timeout 180 opensearch-dashboards
 fi

@@ -7,6 +7,10 @@ server.ssl.key: "/usr/share/opensearch-dashboards/config/certs/dashboards-key.pe
 opensearch.hosts: ["https://opensearch.url:${OPENSEARCH_PORT}"]
 opensearch.ssl.verificationMode: certificate
 opensearch.ssl.certificateAuthorities: ["/usr/share/opensearch-dashboards/config/certs/root-ca.pem"]
+# Dashboards→OpenSearch service auth: present dashboards leaf as client cert (no password env).
+opensearch.ssl.certificate: "/usr/share/opensearch-dashboards/config/certs/dashboards.pem"
+opensearch.ssl.key: "/usr/share/opensearch-dashboards/config/certs/dashboards-key.pem"
+opensearch.ssl.alwaysPresentCertificate: true
 logging.dest: stdout
 
 # Avoid huge Discover highlight payloads for nested HTTP body fields.

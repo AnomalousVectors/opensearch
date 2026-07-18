@@ -1,7 +1,7 @@
 # OpenSearch Dashboards with config substitution from .env (envsubst).
 # Based on the OpenSearch Project image — not an official OpenSearch Project image.
 ARG OPENSEARCH_VERSION=3.7.0
-ARG AV_IMAGE_REVISION=1
+ARG AV_IMAGE_REVISION=2
 ARG IMAGE_TAG=${OPENSEARCH_VERSION}-av.${AV_IMAGE_REVISION}
 
 FROM opensearchproject/opensearch-dashboards:${OPENSEARCH_VERSION}
