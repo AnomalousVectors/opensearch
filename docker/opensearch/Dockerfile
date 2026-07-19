@@ -32,20 +32,12 @@ RUN /usr/share/opensearch/bin/opensearch-plugin install --batch transport-reacto
 # Config templates (repo is source of truth; baked into the image at build)
 COPY --chown=opensearch:opensearch config/opensearch.yml /usr/share/opensearch/config/opensearch.yml
 COPY --chown=opensearch:opensearch config/opensearch-performance-analyzer/ /usr/share/opensearch/config/opensearch-performance-analyzer/
-# Security overlays: clientcert auth for Dashboards leaf CN → kibana_server
-# Live path (defaults) + av-security/ (re-applied after demo password install in entrypoint)
-COPY --chown=opensearch:opensearch config/opensearch-security/config.yml /usr/share/opensearch/config/opensearch-security/config.yml
-COPY --chown=opensearch:opensearch config/opensearch-security/roles_mapping.yml /usr/share/opensearch/config/opensearch-security/roles_mapping.yml
-COPY --chown=opensearch:opensearch config/opensearch-security/config.yml /usr/share/opensearch/config/av-security/config.yml
-COPY --chown=opensearch:opensearch config/opensearch-security/roles_mapping.yml /usr/share/opensearch/config/av-security/roles_mapping.yml
 
 # Scripts: cert generation and entrypoint wrapper
 COPY --chown=opensearch:opensearch --chmod=755 scripts/generate-certs.sh /usr/share/opensearch/scripts/generate-certs.sh
 COPY --chown=opensearch:opensearch --chmod=755 entrypoint-wrapper.sh /usr/share/opensearch/entrypoint-wrapper.sh
 RUN sed -i 's/\r$//' /usr/share/opensearch/scripts/generate-certs.sh /usr/share/opensearch/entrypoint-wrapper.sh \
-  && sed -i 's/\r$//' /usr/share/opensearch/config/opensearch.yml \
-    /usr/share/opensearch/config/opensearch-security/config.yml \
-    /usr/share/opensearch/config/opensearch-security/roles_mapping.yml
+  && sed -i 's/\r$//' /usr/share/opensearch/config/opensearch.yml
 
 ENTRYPOINT ["/usr/share/opensearch/entrypoint-wrapper.sh"]
 CMD ["opensearch"]

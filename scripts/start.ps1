@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
   Start Anomalous Vectors OpenSearch + Dashboards (Hub images).
-  First-run interactive admin password only; Dashboards uses client-cert auth to OpenSearch.
+  Interactive admin password prompt; does not store the password in .env.
 #>
 $ErrorActionPreference = "Stop"
 
@@ -62,6 +62,7 @@ function Test-AdminPassword([string]$Password) {
 
 function Clear-RuntimePasswords {
   Remove-Item Env:OPENSEARCH_INITIAL_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+  Remove-Item Env:OPENSEARCH_DASHBOARDS_PASSWORD -ErrorAction SilentlyContinue
 }
 
 # Restrict certs dir and *-key.pem to the current user and Administrators (not all Users).
@@ -153,6 +154,7 @@ try {
       Write-ErrPrompt "Passwords do not match. Try again."
     }
     $env:OPENSEARCH_INITIAL_ADMIN_PASSWORD = $password
+    $env:OPENSEARCH_DASHBOARDS_PASSWORD = $password
     Write-Prompt "OpenSearch stores only the hash. Save this password for Dashboards and API login as admin."
     Write-Prompt "Change password docs: https://docs.opensearch.org/latest/api-reference/security/authentication/change-password/"
 
@@ -173,11 +175,29 @@ try {
       throw "OpenSearch did not become reachable in time."
     }
     Protect-CertPrivateKeys $certsDir
+
+    $maxAttempts = if ($env:MAX_PASSWORD_ATTEMPTS) { [int]$env:MAX_PASSWORD_ATTEMPTS } else { 3 }
+    $ok = $false
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+      $password = Read-NonEmptyPassword "Enter OpenSearch admin password for this run:"
+      if (Test-AdminPassword $password) {
+        $env:OPENSEARCH_DASHBOARDS_PASSWORD = $password
+        $ok = $true
+        break
+      }
+      if ($attempt -lt $maxAttempts) {
+        Write-ErrPrompt "Invalid password. Please try again. ($attempt/$maxAttempts)"
+      } else {
+        throw "Invalid password. Reached max attempts ($maxAttempts). Aborting start."
+      }
+    }
+    if (-not $ok) { throw "Password validation failed." }
     Invoke-Compose up -d --pull $upPullPolicy --wait --wait-timeout 180 opensearch-dashboards
   }
 
   Protect-CertPrivateKeys $certsDir
-  Write-Prompt "Stack is up. OpenSearch and Dashboards should report healthy shortly."
+  Write-Prompt "Stack is up. OpenSearch and Dashboards are healthy."
+  Write-Prompt "Next: https://github.com/AnomalousVectors/opensearch/wiki/OpenSearch"
 } finally {
   Clear-RuntimePasswords
 }

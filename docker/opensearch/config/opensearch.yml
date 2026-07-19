@@ -7,7 +7,6 @@ plugins.security.ssl.http.enabled: true
 plugins.security.ssl.http.pemcert_filepath: certs/opensearch.pem
 plugins.security.ssl.http.pemkey_filepath: certs/opensearch-key.pem
 plugins.security.ssl.http.pemtrustedcas_filepath: certs/root-ca.pem
-plugins.security.ssl.http.clientauth_mode: OPTIONAL
 plugins.security.allow_default_init_securityindex: true
 plugins.security.nodes_dn:
   - "CN=opensearch,OU=Dev,O=AnomalousVectors,L=City,ST=State,C=US"

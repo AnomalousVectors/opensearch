@@ -4,7 +4,7 @@
 
 services:
   opensearch:
-    image: anomalousvectors/opensearch:3.7.0-av.5
+    image: anomalousvectors/opensearch:3.7.0-av.6
     pull_policy: always
     container_name: opensearch
     environment:
@@ -12,7 +12,7 @@ services:
       - node.name=opensearch
       - bootstrap.memory_lock=true
       - OPENSEARCH_JAVA_OPTS=${OPENSEARCH_JAVA_OPTS}
-      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_INSTALL_DEMO_CONFIG=false
       - DISABLE_SECURITY_PLUGIN=false
       - OPENSEARCH_PUBLISH_HOST=${OPENSEARCH_PUBLISH_HOST}
       - OPENSEARCH_BIND_ADDRESS=${OPENSEARCH_BIND_ADDRESS}
@@ -40,7 +40,7 @@ services:
       start_period: 60s
 
   opensearch-dashboards:
-    image: anomalousvectors/opensearch-dashboards:3.7.0-av.5
+    image: anomalousvectors/opensearch-dashboards:3.7.0-av.6
     pull_policy: always
     container_name: opensearch-dashboards
     ports:
@@ -51,6 +51,8 @@ services:
       - OPENSEARCH_PORT=${OPENSEARCH_PORT}
       - OPENSEARCH_HOSTS=["https://${OPENSEARCH_PUBLISH_HOST}:${OPENSEARCH_PORT}"]
       - DISABLE_SECURITY_DASHBOARDS_PLUGIN=false
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=${OPENSEARCH_DASHBOARDS_PASSWORD:-}
     volumes:
       - ${DATA_VOLUME_ROOT}/opensearch-dashboards/data:/usr/share/opensearch-dashboards/data
       - ${DATA_VOLUME_ROOT}/opensearch-dashboards/logs:/usr/share/opensearch-dashboards/logs
