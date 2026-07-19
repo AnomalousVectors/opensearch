@@ -1,23 +1,24 @@
 # Maintainer override: build images from this repo instead of pulling Hub.
-# Keep build args in sync with the image tags hardcoded in compose.yml.
+# Tag authority: see REFERENCE.md (compose.yml image: lines only).
+# Export build-args first (scripts/build-images.sh|.ps1 and compose_stack_build / Invoke-ComposeBuild do this).
 # Usage (from repo root, after .env is set):
-#   docker compose -f compose.yml -f compose.build.yml build
-#   docker compose -f compose.yml -f compose.build.yml up -d
+#   ./scripts/build-images.sh
+#   .\scripts\build-images.ps1
 services:
   opensearch:
     build:
       context: ./docker/opensearch
       dockerfile: Dockerfile
       args:
-        OPENSEARCH_VERSION: "3.7.0"
-        AV_IMAGE_REVISION: "2"
-        IMAGE_TAG: "3.7.0-av.2"
+        OPENSEARCH_VERSION: ${OPENSEARCH_VERSION}
+        AV_IMAGE_REVISION: ${AV_IMAGE_REVISION}
+        IMAGE_TAG: ${IMAGE_TAG}
 
   opensearch-dashboards:
     build:
       context: ./docker/opensearch-dashboards
       dockerfile: Dockerfile
       args:
-        OPENSEARCH_VERSION: "3.7.0"
-        AV_IMAGE_REVISION: "2"
-        IMAGE_TAG: "3.7.0-av.2"
+        OPENSEARCH_VERSION: ${OPENSEARCH_VERSION}
+        AV_IMAGE_REVISION: ${AV_IMAGE_REVISION}
+        IMAGE_TAG: ${IMAGE_TAG}

@@ -128,7 +128,11 @@ protect_cert_private_keys() {
 trap cleanup_runtime_passwords EXIT
 
 print_prompt "Pulling Hub images from compose.yml, then starting the stack."
-compose_stack pull
+UP_PULL_POLICY="always"
+if ! compose_stack pull; then
+  print_prompt "Hub pull failed; using local images if present (build with compose.build.yml or wait for publish)."
+  UP_PULL_POLICY="never"
+fi
 
 if [ "$FIRST_START" = true ]; then
   prompt_initial_password_with_confirmation
@@ -136,7 +140,7 @@ if [ "$FIRST_START" = true ]; then
   print_prompt "OpenSearch stores only the hash. Save this password for Dashboards and API login as admin."
   print_prompt "Change password docs: https://docs.opensearch.org/latest/api-reference/security/authentication/change-password/"
 
-  compose_stack up -d --wait --wait-timeout 180 opensearch
+  compose_stack up -d --pull "$UP_PULL_POLICY" --wait --wait-timeout 180 opensearch
 
   print_prompt "Waiting for OpenSearch to become reachable..."
   if ! wait_opensearch_reachable; then
@@ -150,9 +154,9 @@ if [ "$FIRST_START" = true ]; then
     exit 1
   fi
 
-  compose_stack up -d --wait --wait-timeout 180 opensearch-dashboards
+  compose_stack up -d --pull "$UP_PULL_POLICY" --wait --wait-timeout 180 opensearch-dashboards
 else
-  compose_stack up -d --wait --wait-timeout 180 opensearch
+  compose_stack up -d --pull "$UP_PULL_POLICY" --wait --wait-timeout 180 opensearch
 
   print_prompt "Waiting for OpenSearch to become reachable..."
   if ! wait_opensearch_reachable; then
@@ -161,7 +165,7 @@ else
   fi
   protect_cert_private_keys
 
-  compose_stack up -d --wait --wait-timeout 180 opensearch-dashboards
+  compose_stack up -d --pull "$UP_PULL_POLICY" --wait --wait-timeout 180 opensearch-dashboards
 fi
 
 protect_cert_private_keys

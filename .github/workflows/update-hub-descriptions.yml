@@ -54,11 +54,11 @@ jobs:
           }
 
           update_repo "opensearch" \
-            "OpenSearch for agentic pentest research. See the project wiki." \
+            "Custom OpenSearch for agentic penetration testing.." \
             "dockerhub/opensearch.md"
 
           update_repo "opensearch-dashboards" \
-            "Dashboards for the Anomalous Vectors OpenSearch research stack. See the wiki." \
+            "Custom OpenSearch Dashboards for agentic penetration testing.." \
             "dockerhub/opensearch-dashboards.md"
 
           echo "Docker Hub overviews updated."

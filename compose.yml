@@ -4,7 +4,7 @@
 
 services:
   opensearch:
-    image: anomalousvectors/opensearch:3.7.0-av.2
+    image: anomalousvectors/opensearch:3.7.0-av.3
     pull_policy: always
     container_name: opensearch
     environment:
@@ -40,7 +40,7 @@ services:
       start_period: 60s
 
   opensearch-dashboards:
-    image: anomalousvectors/opensearch-dashboards:3.7.0-av.2
+    image: anomalousvectors/opensearch-dashboards:3.7.0-av.3
     pull_policy: always
     container_name: opensearch-dashboards
     ports:

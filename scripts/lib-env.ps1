@@ -73,6 +73,30 @@ function Get-HttpStatusCode {
   }
 }
 
+function Get-ImageTagFromCompose {
+  $composeFile = Join-Path $script:RepoRoot "compose.yml"
+  $text = Get-Content -LiteralPath $composeFile -Raw
+  $osMatch = [regex]::Match($text, 'anomalousvectors/opensearch:([^\s]+)')
+  $dbMatch = [regex]::Match($text, 'anomalousvectors/opensearch-dashboards:([^\s]+)')
+  if (-not $osMatch.Success) {
+    throw "Could not parse anomalousvectors/opensearch:<tag> from compose.yml"
+  }
+  if (-not $dbMatch.Success) {
+    throw "Could not parse anomalousvectors/opensearch-dashboards:<tag> from compose.yml"
+  }
+  $osTag = $osMatch.Groups[1].Value.Trim()
+  $dbTag = $dbMatch.Groups[1].Value.Trim()
+  if ($osTag -ne $dbTag) {
+    throw "compose.yml image tags differ (opensearch=$osTag, opensearch-dashboards=$dbTag); keep them equal."
+  }
+  if ($osTag -notmatch '^(?<ver>.+)-av\.(?<rev>.+)$') {
+    throw "Tag must look like <opensearch_version>-av.<revision> (got: $osTag)"
+  }
+  $env:IMAGE_TAG = $osTag
+  $env:OPENSEARCH_VERSION = $Matches['ver']
+  $env:AV_IMAGE_REVISION = $Matches['rev']
+}
+
 function Invoke-Compose {
   param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ComposeArgs)
   & docker compose --project-directory $script:RepoRoot -f (Join-Path $script:RepoRoot "compose.yml") @ComposeArgs
@@ -81,6 +105,7 @@ function Invoke-Compose {
 
 function Invoke-ComposeBuild {
   param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ComposeArgs)
+  Get-ImageTagFromCompose
   & docker compose --project-directory $script:RepoRoot `
     -f (Join-Path $script:RepoRoot "compose.yml") `
     -f (Join-Path $script:RepoRoot "compose.build.yml") `

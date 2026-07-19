@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shared .env loader for repo-root scripts.
-# Hub image tags are hardcoded in compose.yml (git pull updates them).
+# Hub image tags are hardcoded only in compose.yml (git pull updates them).
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -27,11 +27,48 @@ host_opensearch_url() {
   echo "https://127.0.0.1:${OPENSEARCH_PORT:-9200}"
 }
 
+# Parse Hub tags from compose.yml (sole authoritative source). Exports:
+#   IMAGE_TAG, OPENSEARCH_VERSION, AV_IMAGE_REVISION
+load_image_tag_from_compose() {
+  local compose_file="${REPO_ROOT}/compose.yml"
+  local os_tag db_tag
+  os_tag="$(grep -oE 'anomalousvectors/opensearch:[^[:space:]]+' "$compose_file" | head -1 | cut -d: -f2 | tr -d '\r' || true)"
+  db_tag="$(grep -oE 'anomalousvectors/opensearch-dashboards:[^[:space:]]+' "$compose_file" | head -1 | cut -d: -f2 | tr -d '\r' || true)"
+  if [ -z "$os_tag" ]; then
+    echo "Could not parse anomalousvectors/opensearch:<tag> from compose.yml" >&2
+    exit 1
+  fi
+  if [ -z "$db_tag" ]; then
+    echo "Could not parse anomalousvectors/opensearch-dashboards:<tag> from compose.yml" >&2
+    exit 1
+  fi
+  if [ "$os_tag" != "$db_tag" ]; then
+    echo "compose.yml image tags differ (opensearch=${os_tag}, opensearch-dashboards=${db_tag}); keep them equal." >&2
+    exit 1
+  fi
+  case "$os_tag" in
+    *-av.*)
+      export IMAGE_TAG="$os_tag"
+      export OPENSEARCH_VERSION="${os_tag%-av.*}"
+      export AV_IMAGE_REVISION="${os_tag##*-av.}"
+      ;;
+    *)
+      echo "Tag must look like <opensearch_version>-av.<revision> (got: ${os_tag})" >&2
+      exit 1
+      ;;
+  esac
+  if [ -z "$OPENSEARCH_VERSION" ] || [ -z "$AV_IMAGE_REVISION" ]; then
+    echo "Failed to split OPENSEARCH_VERSION/AV_IMAGE_REVISION from tag: ${os_tag}" >&2
+    exit 1
+  fi
+}
+
 compose_stack() {
   docker compose --project-directory "${REPO_ROOT}" -f "${REPO_ROOT}/compose.yml" "$@"
 }
 
 compose_stack_build() {
+  load_image_tag_from_compose
   docker compose --project-directory "${REPO_ROOT}" \
     -f "${REPO_ROOT}/compose.yml" \
     -f "${REPO_ROOT}/compose.build.yml" \

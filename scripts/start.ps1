@@ -133,7 +133,14 @@ try {
   $firstStart = -not (Test-Path (Join-Path $dataDir "nodes"))
 
   Write-Prompt "Pulling Hub images from compose.yml, then starting the stack."
-  Invoke-Compose pull
+  $pullArgs = @("pull")
+  $upPullPolicy = "always"
+  try {
+    Invoke-Compose @pullArgs
+  } catch {
+    Write-Prompt "Hub pull failed; using local images if present (build with compose.build.yml or wait for publish)."
+    $upPullPolicy = "never"
+  }
 
   if ($firstStart) {
     while ($true) {
@@ -149,7 +156,7 @@ try {
     Write-Prompt "OpenSearch stores only the hash. Save this password for Dashboards and API login as admin."
     Write-Prompt "Change password docs: https://docs.opensearch.org/latest/api-reference/security/authentication/change-password/"
 
-    Invoke-Compose up -d --wait --wait-timeout 180 opensearch
+    Invoke-Compose up -d --pull $upPullPolicy --wait --wait-timeout 180 opensearch
     Write-Prompt "Waiting for OpenSearch to become reachable..."
     if (-not (Wait-OpenSearchReachable)) {
       throw "OpenSearch did not become reachable in time."
@@ -158,15 +165,15 @@ try {
     if (-not (Test-AdminPassword $password)) {
       throw "Initial password validation failed after bootstrap. Aborting start."
     }
-    Invoke-Compose up -d --wait --wait-timeout 180 opensearch-dashboards
+    Invoke-Compose up -d --pull $upPullPolicy --wait --wait-timeout 180 opensearch-dashboards
   } else {
-    Invoke-Compose up -d --wait --wait-timeout 180 opensearch
+    Invoke-Compose up -d --pull $upPullPolicy --wait --wait-timeout 180 opensearch
     Write-Prompt "Waiting for OpenSearch to become reachable..."
     if (-not (Wait-OpenSearchReachable)) {
       throw "OpenSearch did not become reachable in time."
     }
     Protect-CertPrivateKeys $certsDir
-    Invoke-Compose up -d --wait --wait-timeout 180 opensearch-dashboards
+    Invoke-Compose up -d --pull $upPullPolicy --wait --wait-timeout 180 opensearch-dashboards
   }
 
   Protect-CertPrivateKeys $certsDir

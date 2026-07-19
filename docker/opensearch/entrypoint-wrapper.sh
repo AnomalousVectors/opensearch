@@ -2,6 +2,8 @@
 set -e
 CONF_SRC="${OPENSEARCH_PATH_CONF:-/usr/share/opensearch/config}"
 CERT_DIR="$CONF_SRC/certs"
+AV_SECURITY_DIR="/usr/share/opensearch/config/av-security"
+OPENSEARCH_HOME="${OPENSEARCH_HOME:-/usr/share/opensearch}"
 
 # Generate certs if missing (OpenSearch and/or Dashboards leaf certs)
 if [ ! -f "$CERT_DIR/opensearch.pem" ] || [ ! -f "$CERT_DIR/opensearch-key.pem" ] || \
@@ -34,5 +36,29 @@ envsubst < "$CONF_SRC/opensearch.yml" > "$RESOLVED_CONF/opensearch.yml"
 [ -d "$CONF_SRC/certs" ] && ln -sfn "$CONF_SRC/certs" "$RESOLVED_CONF/certs"
 export OPENSEARCH_PATH_CONF="$RESOLVED_CONF"
 
-cd /usr/share/opensearch
+# OPENSEARCH_INITIAL_ADMIN_PASSWORD is applied by install_demo_configuration.sh only.
+# Run it once when the start script supplies that env, then restore AV security overlays
+# (demo install overwrites config.yml / roles_mapping.yml).
+if [ -n "${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-}" ] && [ "${DISABLE_SECURITY_PLUGIN:-}" != "true" ]; then
+  DEMO_INSTALLER="$OPENSEARCH_HOME/plugins/opensearch-security/tools/install_demo_configuration.sh"
+  if [ -x "$DEMO_INSTALLER" ]; then
+    echo "Applying initial admin password via Security demo install (overlays re-applied after)."
+    bash "$DEMO_INSTALLER" -y -i -s
+  fi
+  # Demo may rewrite opensearch.yml; restore ours and certs link.
+  envsubst < "$CONF_SRC/opensearch.yml" > "$RESOLVED_CONF/opensearch.yml"
+  [ -d "$CONF_SRC/certs" ] && ln -sfn "$CONF_SRC/certs" "$RESOLVED_CONF/certs"
+fi
+
+# Always apply AV clientcert + kibana_server overlays for this run's config tree.
+if [ -f "$AV_SECURITY_DIR/config.yml" ] && [ -f "$AV_SECURITY_DIR/roles_mapping.yml" ]; then
+  mkdir -p "$RESOLVED_CONF/opensearch-security"
+  cp "$AV_SECURITY_DIR/config.yml" "$RESOLVED_CONF/opensearch-security/config.yml"
+  cp "$AV_SECURITY_DIR/roles_mapping.yml" "$RESOLVED_CONF/opensearch-security/roles_mapping.yml"
+fi
+
+# Skip a second demo run inside opensearch-docker-entrypoint.sh.
+export DISABLE_INSTALL_DEMO_CONFIG=true
+
+cd "$OPENSEARCH_HOME"
 exec ./opensearch-docker-entrypoint.sh "$@"
